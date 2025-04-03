@@ -1,0 +1,21 @@
+**/__pycache__
+.venv
+.pytest_cache
+*.sqlite3
+.env
+
+# images
+.png
+.jpg
+.jpeg
+.webp
+.svg
+.gif
+.mp4
+.mp3
+.wav
+.pdf
+
+# Uploads de arquivos - mantém a pasta
+/static/uploads/*
+!static/uploads/.gitkeep
