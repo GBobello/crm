@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     algorithm: str
     type_product: str
     upload_folder: str
+    debug: bool
 
     class Config:
         env_file = ".env"

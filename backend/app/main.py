@@ -1,13 +1,17 @@
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.api import auth, lawyer
 from app.db.init_db import init_db
-from dotenv import load_dotenv
+from app.core.config import settings
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(redoc_url=None, docs_url=None)
+
+if settings.debug:
+    app = FastAPI()
 
 
 @app.on_event("startup")
