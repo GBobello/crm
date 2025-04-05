@@ -1,46 +1,7 @@
-import enum
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum
 from app.models.user import User
-
-
-class State(str, enum.Enum):
-    AC = "AC"
-    AL = "AL"
-    AP = "AP"
-    AM = "AM"
-    BA = "BA"
-    CE = "CE"
-    DF = "DF"
-    ES = "ES"
-    GO = "GO"
-    MA = "MA"
-    MT = "MT"
-    MS = "MS"
-    MG = "MG"
-    PA = "PA"
-    PB = "PB"
-    PR = "PR"
-    PE = "PE"
-    PI = "PI"
-    RJ = "RJ"
-    RN = "RN"
-    RS = "RS"
-    RO = "RO"
-    RR = "RR"
-    SC = "SC"
-    SP = "SP"
-    SE = "SE"
-    TO = "TO"
-
-
-class CivilStatus(str, enum.Enum):
-    SOLTEIRO = "SOLTEIRO"
-    CASADO = "CASADO"
-    DIVORCIADO = "DIVORCIADO"
-    VIUVO = "VIUVO"
-    SEPARADO_JUDICIALMENTE = "SEPARADO_JUDICIALMENTE"
-    UNIAO_ESTAVEL = "UNIAO_ESTAVEL"
-    OUTRO = "OUTRO"
+from app.models.enums.state import State
+from app.models.enums.civil_status import CivilStatus
 
 
 class Lawyer(User):
@@ -67,4 +28,4 @@ class Lawyer(User):
     }
 
     def __str__(self):
-        return f"Lawyer(id={self.id}, oab={self.oab})"
+        return f"Lawyer(id={self.id}, oab={self.name})"

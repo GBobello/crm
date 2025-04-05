@@ -1,0 +1,11 @@
+import enum
+
+
+class CivilStatus(str, enum.Enum):
+    SOLTEIRO = "SOLTEIRO"
+    CASADO = "CASADO"
+    DIVORCIADO = "DIVORCIADO"
+    VIUVO = "VIUVO"
+    SEPARADO_JUDICIALMENTE = "SEPARADO_JUDICIALMENTE"
+    UNIAO_ESTAVEL = "UNIAO_ESTAVEL"
+    OUTRO = "OUTRO"

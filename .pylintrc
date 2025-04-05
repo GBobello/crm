@@ -17,6 +17,8 @@ disable=
       W1510, # 'subprocess.run' used without explicitly defining the value for 'check'. (subprocess-run-check)
       C0411, # standard import "subprocess" should be placed before third party import "uvicorn" (wrong-import-order)
       W0707, # Consider explicitly re-raising using 'except JWTError as exc' and 'raise HTTPException(status_code=401, detail='Token inv�lido') from exc' (raise-missing-from)      
+      C0103, # Module name "8558fdd9e0b3_create_customers_models" doesn't conform to snake_case naming style (invalid-name)
+      R0801, # Similar lines in 2 files
 
 # Analyse import fallback blocks. This can be used to support both Python 2 and
 # 3 compatible code, which means that the block might have code that exists

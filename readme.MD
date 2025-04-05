@@ -49,6 +49,19 @@ O sistema já conta com uma API robusta para gerenciamento de advogados:
 | `PUT`    | `/lawyers/list`                        | ✅❌ Ativação ou desativação em massa de advogados  |
 | `POST`   | `/lawyers/{id}/upload_profile_picture` | 📸 Upload da foto de perfil do advogado             |
 
+## 📚 Funcionalidades da API para `Customers`
+
+O sistema já conta com uma API robusta para gerenciamento de clientes:
+
+| Método   | Rota                                   | Descrição                                           |
+| -------- | -------------------------------------- | --------------------------------------------------- |
+| `POST`   | `/customers/`                          | 👤 Criação de um novo cliente                       |
+| `PUT`    | `/customers/{id}`                      | ✏️ Atualização dos dados de um cliente              |
+| `GET`    | `/customers/`                          | 📄 Listagem de todos os clientes                    |
+| `GET`    | `/customers/{id}`                      | 🔍 Detalhes de um cliente específico                |
+| `DELETE` | `/customers/{id}`                      | 🗑️ Exclusão individual                              |
+| `DELETE` | `/customers/list`                      | 🗑️🗑️ Exclusão em massa a partir de uma lista de IDs |
+
 ---
 
 ## 🧩 Foco em Modularidade

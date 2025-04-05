@@ -66,7 +66,7 @@ def create_lawyer(
     return new_lawyer
 
 
-@router.put("/{lawyer_id}")
+@router.put("/{lawyer_id}", response_model=LawyerResponse)
 def update_lawyer(
     lawyer_id: int,
     lawyer: LawyerUpdate,
