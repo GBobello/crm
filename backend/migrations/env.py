@@ -9,7 +9,15 @@ from app.db.base import Base
 from app.core.config import settings
 
 # Faça o import dos models criados para que o alembic reconheça-os
-from app.models import lawyer, session, user, custumer
+from app.models import (
+    lawyer,
+    permission,
+    session,
+    user,
+    custumer,
+    position,
+    position_permission,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

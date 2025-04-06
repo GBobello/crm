@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     sqlalchemy_database_url: str
     algorithm: str
     type_product: str
-    upload_folder: str
+    upload_folder_win: str
+    upload_folder_linux: str
     debug: bool
 
     class Config:

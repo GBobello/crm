@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models.custumer import Customer
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
-from app.core.security import verify_session
-from app.utils.validate_document import validate_document
-from app.utils.validate_phone import validate_phone
+from app.core.security import require_permission
 from app.db.session import get_db
 
 router = APIRouter()
@@ -13,7 +11,7 @@ router = APIRouter()
 @router.post("/", response_model=CustomerResponse)
 def create_customer(
     customer: CustomerCreate,
-    user=Depends(verify_session),
+    permission=Depends(require_permission("create_customer")),
     db: Session = Depends(get_db),
 ):
     existing = db.query(Customer).filter(Customer.document == customer.document).first()
@@ -49,7 +47,7 @@ def create_customer(
 def update_customer(
     customer_id: int,
     customer: CustomerUpdate,
-    user=Depends(verify_session),
+    permission=Depends(require_permission("update_customer")),
     db: Session = Depends(get_db),
 ):
     customer_to_update = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -66,14 +64,19 @@ def update_customer(
 
 
 @router.get("/", response_model=list[CustomerResponse])
-def get_customers(user=Depends(verify_session), db: Session = Depends(get_db)):
+def get_customers(
+    permission=Depends(require_permission("view_customer")),
+    db: Session = Depends(get_db),
+):
     customers = db.query(Customer).all()
     return customers
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(
-    customer_id: int, user=Depends(verify_session), db: Session = Depends(get_db)
+    customer_id: int,
+    permission=Depends(require_permission("view_customer")),
+    db: Session = Depends(get_db),
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
@@ -83,7 +86,9 @@ def get_customer(
 
 @router.delete("/{customer_id}")
 def delete_customer(
-    customer_id: int, user=Depends(verify_session), db: Session = Depends(get_db)
+    customer_id: int,
+    permission=Depends(require_permission("delete_customer")),
+    db: Session = Depends(get_db),
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
 
@@ -98,7 +103,9 @@ def delete_customer(
 
 @router.delete("/list/delete")
 def delete_customer_list(
-    customer_ids: list[int], user=Depends(verify_session), db: Session = Depends(get_db)
+    customer_ids: list[int],
+    permission=Depends(require_permission("delete_customer")),
+    db: Session = Depends(get_db),
 ):
     customers = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
     for customer in customers:

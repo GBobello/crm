@@ -19,6 +19,7 @@ disable=
       W0707, # Consider explicitly re-raising using 'except JWTError as exc' and 'raise HTTPException(status_code=401, detail='Token inv�lido') from exc' (raise-missing-from)      
       C0103, # Module name "8558fdd9e0b3_create_customers_models" doesn't conform to snake_case naming style (invalid-name)
       R0801, # Similar lines in 2 files
+      W0621, # Redefining name 'auth_token' from outer scope (line 8) (redefined-outer-name)
 
 # Analyse import fallback blocks. This can be used to support both Python 2 and
 # 3 compatible code, which means that the block might have code that exists

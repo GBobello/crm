@@ -1,19 +1,19 @@
 import os
+import platform
 import shutil
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
 from app.models.lawyer import Lawyer
+from app.models.position import Position
 from app.schemas.lawyer import LawyerCreate, LawyerUpdate, LawyerResponse
-from app.core.security import verify_session, generate_hashed_password
+from app.core.security import (
+    generate_hashed_password,
+    require_permission,
+)
 from app.core.config import settings
-from app.utils.validate_document import validate_document
-from app.utils.validate_phone import validate_phone
-
-# utilizado para fazer debug
-# import pdb
 
 router = APIRouter()
 
@@ -21,26 +21,20 @@ router = APIRouter()
 @router.post("/", response_model=LawyerResponse)
 def create_lawyer(
     lawyer: LawyerCreate,
-    user=Depends(verify_session),
+    permission=Depends(require_permission("create_lawyer")),
     db: Session = Depends(get_db),
 ):
     existing = db.query(User).filter(User.username == lawyer.username).first()
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="Username já existe.",
         )
-    if not validate_document(lawyer.document):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Documento inválido.",
-        )
 
-    if not validate_phone(lawyer.phone):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Telefone inválido.",
-        )
+    if lawyer.position_id is not None:
+        position = db.query(Position).get(lawyer.position_id)
+        if not position:
+            raise HTTPException(status_code=404, detail="Cargo não encontrado")
 
     new_lawyer = Lawyer(
         username=lawyer.username,
@@ -57,6 +51,7 @@ def create_lawyer(
         country=lawyer.country,
         oab=lawyer.oab,
         oab_state=lawyer.oab_state,
+        position_id=lawyer.position_id,
     )
 
     db.add(new_lawyer)
@@ -70,12 +65,17 @@ def create_lawyer(
 def update_lawyer(
     lawyer_id: int,
     lawyer: LawyerUpdate,
-    user=Depends(verify_session),
+    permission=Depends(require_permission("update_lawyer")),
     db: Session = Depends(get_db),
 ):
     lawyer_to_update = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer_to_update:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
+
+    if lawyer.position_id is not None:
+        position = db.query(Position).get(lawyer.position_id)
+        if not position:
+            raise HTTPException(status_code=404, detail="Cargo não encontrado")
 
     for field, value in lawyer.model_dump(exclude_unset=True).items():
         setattr(lawyer_to_update, field, value)
@@ -87,14 +87,19 @@ def update_lawyer(
 
 
 @router.get("/", response_model=list[LawyerResponse])
-def get_lawyers(user=Depends(verify_session), db: Session = Depends(get_db)):
-    lawyers = db.query(Lawyer).all()
+def get_lawyers(
+    permission=Depends(require_permission("view_lawyer")),
+    db: Session = Depends(get_db),
+):
+    lawyers = db.query(Lawyer).order_by(Lawyer.id).all()
     return lawyers
 
 
 @router.get("/{lawyer_id}", response_model=LawyerResponse)
 def get_lawyer(
-    lawyer_id: int, user=Depends(verify_session), db: Session = Depends(get_db)
+    lawyer_id: int,
+    permission=Depends(require_permission("view_lawyer")),
+    db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer:
@@ -104,7 +109,9 @@ def get_lawyer(
 
 @router.delete("/{lawyer_id}")
 def delete_lawyer(
-    lawyer_id: int, user=Depends(verify_session), db: Session = Depends(get_db)
+    lawyer_id: int,
+    permission=Depends(require_permission("delete_lawyer")),
+    db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer:
@@ -122,7 +129,7 @@ def delete_lawyer(
 def upload_profile_picture(
     lawyer_id: int,
     file: UploadFile = File(...),
-    user=Depends(verify_session),
+    permission=Depends(require_permission("update_lawyer")),
     db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
@@ -131,9 +138,14 @@ def upload_profile_picture(
 
     ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid4().hex}{ext}"
-    if not os.path.exists(settings.upload_folder):
-        os.makedirs(settings.upload_folder)
-    filepath = os.path.join(settings.upload_folder, filename)
+    if platform.system() == "Windows":
+        if not os.path.exists(settings.upload_folder_win):
+            os.makedirs(settings.upload_folder_win)
+        filepath = os.path.join(settings.upload_folder_win, filename)
+    else:
+        if not os.path.exists(settings.upload_folder_linux):
+            os.makedirs(settings.upload_folder_linux)
+        filepath = os.path.join(settings.upload_folder_linux, filename)
 
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -148,7 +160,7 @@ def upload_profile_picture(
 @router.put("/list/active")
 def activate_lawyer_list(
     lawyer_ids: list[int],
-    user=Depends(verify_session),
+    permission=Depends(require_permission("update_lawyer")),
     db: Session = Depends(get_db),
 ):
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()
@@ -161,7 +173,7 @@ def activate_lawyer_list(
 @router.delete("/list/delete")
 def delete_lawyer_list(
     lawyer_ids: list[int],
-    user=Depends(verify_session),
+    permission=Depends(require_permission("delete_lawyer")),
     db: Session = Depends(get_db),
 ):
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()

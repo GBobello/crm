@@ -4,6 +4,7 @@ from app.utils.validate_document import validate_document
 from app.utils.validate_phone import validate_phone
 from app.models.enums.civil_status import CivilStatus
 from app.models.enums.state import State
+from app.schemas.position import PositionResponse
 
 
 class LawyerCreate(BaseModel):
@@ -21,6 +22,14 @@ class LawyerCreate(BaseModel):
     country: Optional[str] = None
     oab: str
     oab_state: str
+    position_id: Optional[int] = None
+
+    @field_validator("position_id")
+    @classmethod
+    def validate_position(cls, value):
+        if value is not None and value <= 0:
+            raise ValueError("O id do Cargo deve ser um número positivo.")
+        return value
 
     @field_validator("document")
     @classmethod
@@ -85,6 +94,14 @@ class LawyerUpdate(BaseModel):
     is_active: Optional[bool] = True
     oab: Optional[str] = None
     oab_state: Optional[str] = None
+    position_id: Optional[int] = None
+
+    @field_validator("position_id")
+    @classmethod
+    def validate_position(cls, value):
+        if value is not None and value <= 0:
+            raise ValueError("O id do Cargo deve ser um número positivo.")
+        return value
 
     @field_validator("document")
     @classmethod
@@ -156,6 +173,7 @@ class LawyerResponse(BaseModel):
     photo_url: Optional[str] = None
     oab: str
     oab_state: str
+    position_id: Optional[int] = None
 
     class Config:
         orm_mode = True

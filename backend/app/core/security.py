@@ -4,10 +4,38 @@ from fastapi import Request, HTTPException, Depends
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.models.session import Session as SessionModel
+from app.models.user import User
+from app.models.position import Position
 from app.db.session import get_db
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def require_permission(permission_name: str):
+    def permission_checker(
+        session: dict = Depends(verify_session),
+        db: Session = Depends(get_db),
+    ):
+        user = db.query(User).filter(User.username == session.get("sub")).first()
+        if not user.position_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Usuário não possui cargo definido.",
+            )
+
+        position = db.query(Position).filter(Position.id == user.position_id).first()
+
+        if not position:
+            raise HTTPException(status_code=404, detail="Cargo não encontrado.")
+
+        permission_names = {perm.name for perm in position.permissions}
+        if permission_name not in permission_names:
+            raise HTTPException(status_code=403, detail="Permissão negada.")
+
+        return user
+
+    return permission_checker
 
 
 def verify_session(request: Request, db: Session = Depends(get_db)):

@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.base import Base
+from app.models.position import Position
 
 
 class User(Base):
@@ -10,6 +12,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     type = Column(String, nullable=False)
+    position_id = Column(
+        Integer, ForeignKey("positions.id", name="fk_user_position_id")
+    )
+
+    position = relationship("Position", backref="users")
 
     __mapper_args__ = {
         "polymorphic_identity": "user",
