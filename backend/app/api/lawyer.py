@@ -77,31 +77,9 @@ def update_lawyer(
     if not lawyer_to_update:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
 
-    if not validate_document(lawyer.document):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Documento inválido.",
-        )
+    for field, value in lawyer.model_dump(exclude_unset=True).items():
+        setattr(lawyer_to_update, field, value)
 
-    if not validate_phone(lawyer.phone):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Telefone inválido.",
-        )
-
-    lawyer_to_update.name = lawyer.name
-    lawyer_to_update.email = lawyer.email
-    lawyer_to_update.document = lawyer.document
-    lawyer_to_update.phone = lawyer.phone
-    lawyer_to_update.civil_status = lawyer.civil_status
-    lawyer_to_update.address = lawyer.address
-    lawyer_to_update.city = lawyer.city
-    lawyer_to_update.state = lawyer.state
-    lawyer_to_update.zip_code = lawyer.zip_code
-    lawyer_to_update.country = lawyer.country
-    lawyer_to_update.is_active = lawyer.is_active
-    lawyer_to_update.oab = lawyer.oab
-    lawyer_to_update.oab_state = lawyer.oab_state
     db.commit()
     db.refresh(lawyer_to_update)
 

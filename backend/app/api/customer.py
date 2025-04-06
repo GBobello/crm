@@ -23,16 +23,6 @@ def create_customer(
             status_code=400,
             detail="Cliente com o mesmo documento já existe.",
         )
-    if not validate_document(customer.document):
-        raise HTTPException(
-            status_code=400,
-            detail="Documento inválido.",
-        )
-    if not validate_phone(customer.phone):
-        raise HTTPException(
-            status_code=400,
-            detail="Telefone inválido.",
-        )
 
     new_customer = Customer(
         name=customer.name,
@@ -66,29 +56,8 @@ def update_customer(
     if not customer_to_update:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
-    if not validate_document(customer.document):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Documento inválido.",
-        )
-
-    if not validate_phone(customer.phone):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Telefone inválido.",
-        )
-
-    customer_to_update.name = customer.name
-    customer_to_update.document = customer.document
-    customer_to_update.email = customer.email
-    customer_to_update.phone = customer.phone
-    customer_to_update.born_date = customer.born_date
-    customer_to_update.civil_status = customer.civil_status
-    customer_to_update.address = customer.address
-    customer_to_update.city = customer.city
-    customer_to_update.state = customer.state
-    customer_to_update.zip_code = customer.zip_code
-    customer_to_update.country = customer.country
+    for field, value in customer.model_dump(exclude_unset=True).items():
+        setattr(customer_to_update, field, value)
 
     db.commit()
     db.refresh(customer_to_update)
