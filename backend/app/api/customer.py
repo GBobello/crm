@@ -4,6 +4,7 @@ from app.models.custumer import Customer
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
 from app.core.security import require_permission
 from app.db.session import get_db
+from app.models.enums.default_permissions import DefaultPermissions
 
 router = APIRouter()
 
@@ -11,7 +12,7 @@ router = APIRouter()
 @router.post("/", response_model=CustomerResponse)
 def create_customer(
     customer: CustomerCreate,
-    permission=Depends(require_permission("create_customer")),
+    permission=Depends(require_permission(DefaultPermissions.CREATE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     existing = db.query(Customer).filter(Customer.document == customer.document).first()
@@ -47,7 +48,7 @@ def create_customer(
 def update_customer(
     customer_id: int,
     customer: CustomerUpdate,
-    permission=Depends(require_permission("update_customer")),
+    permission=Depends(require_permission(DefaultPermissions.UPDATE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     customer_to_update = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -65,7 +66,7 @@ def update_customer(
 
 @router.get("/", response_model=list[CustomerResponse])
 def get_customers(
-    permission=Depends(require_permission("view_customer")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     customers = db.query(Customer).all()
@@ -75,7 +76,7 @@ def get_customers(
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(
     customer_id: int,
-    permission=Depends(require_permission("view_customer")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -87,7 +88,7 @@ def get_customer(
 @router.delete("/{customer_id}")
 def delete_customer(
     customer_id: int,
-    permission=Depends(require_permission("delete_customer")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -104,7 +105,7 @@ def delete_customer(
 @router.delete("/list/delete")
 def delete_customer_list(
     customer_ids: list[int],
-    permission=Depends(require_permission("delete_customer")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
     customers = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()

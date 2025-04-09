@@ -14,6 +14,7 @@ from app.core.security import (
     require_permission,
 )
 from app.core.config import settings
+from app.models.enums.default_permissions import DefaultPermissions
 
 router = APIRouter()
 
@@ -21,7 +22,7 @@ router = APIRouter()
 @router.post("/", response_model=LawyerResponse)
 def create_lawyer(
     lawyer: LawyerCreate,
-    permission=Depends(require_permission("create_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.CREATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     existing = db.query(User).filter(User.username == lawyer.username).first()
@@ -65,7 +66,7 @@ def create_lawyer(
 def update_lawyer(
     lawyer_id: int,
     lawyer: LawyerUpdate,
-    permission=Depends(require_permission("update_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyer_to_update = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
@@ -88,7 +89,7 @@ def update_lawyer(
 
 @router.get("/", response_model=list[LawyerResponse])
 def get_lawyers(
-    permission=Depends(require_permission("view_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyers = db.query(Lawyer).order_by(Lawyer.id).all()
@@ -98,7 +99,7 @@ def get_lawyers(
 @router.get("/{lawyer_id}", response_model=LawyerResponse)
 def get_lawyer(
     lawyer_id: int,
-    permission=Depends(require_permission("view_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
@@ -110,7 +111,7 @@ def get_lawyer(
 @router.delete("/{lawyer_id}")
 def delete_lawyer(
     lawyer_id: int,
-    permission=Depends(require_permission("delete_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
@@ -129,7 +130,7 @@ def delete_lawyer(
 def upload_profile_picture(
     lawyer_id: int,
     file: UploadFile = File(...),
-    permission=Depends(require_permission("update_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
@@ -160,7 +161,7 @@ def upload_profile_picture(
 @router.put("/list/active")
 def activate_lawyer_list(
     lawyer_ids: list[int],
-    permission=Depends(require_permission("update_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()
@@ -173,7 +174,7 @@ def activate_lawyer_list(
 @router.delete("/list/delete")
 def delete_lawyer_list(
     lawyer_ids: list[int],
-    permission=Depends(require_permission("delete_lawyer")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()

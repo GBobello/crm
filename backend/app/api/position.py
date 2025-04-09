@@ -5,6 +5,7 @@ from app.core.security import require_permission
 from app.models.position import Position
 from app.models.permission import Permission
 from app.schemas.position import PositionCreate, PositionResponse, PositionUpdate
+from app.models.enums.default_permissions import DefaultPermissions
 
 router = APIRouter()
 
@@ -12,7 +13,7 @@ router = APIRouter()
 @router.post("/", response_model=PositionResponse)
 def create_position(
     position: PositionCreate,
-    permission=Depends(require_permission("create_position")),
+    permission=Depends(require_permission(DefaultPermissions.CREATE_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     permissions = (
@@ -32,7 +33,7 @@ def create_position(
 def update_position(
     position_id: int,
     position: PositionUpdate,
-    permission=Depends(require_permission("update_position")),
+    permission=Depends(require_permission(DefaultPermissions.UPDATE_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     position_to_update = db.query(Position).filter(Position.id == position_id).first()
@@ -59,7 +60,7 @@ def update_position(
 
 @router.get("/", response_model=list[PositionResponse])
 def get_positions(
-    permission=Depends(require_permission("view_position")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     positions = db.query(Position).all()
@@ -70,7 +71,7 @@ def get_positions(
 @router.get("/{position_id}", response_model=PositionResponse)
 def get_position(
     position_id: int,
-    permission=Depends(require_permission("view_position")),
+    permission=Depends(require_permission(DefaultPermissions.VIEW_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     position = db.query(Position).filter(Position.id == position_id).first()
@@ -84,7 +85,7 @@ def get_position(
 @router.delete("/{position_id}")
 def delete_position(
     position_id: int,
-    permission=Depends(require_permission("delete_position")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     position = db.query(Position).filter(Position.id == position_id).first()
@@ -101,7 +102,7 @@ def delete_position(
 @router.delete("/list/delete")
 def delete_position_list(
     position_ids: list[int],
-    permission=Depends(require_permission("delete_position")),
+    permission=Depends(require_permission(DefaultPermissions.DELETE_POSITION.value)),
     db: Session = Depends(get_db),
 ):
     positions = db.query(Position).filter(Position.id.in_(position_ids)).all()
