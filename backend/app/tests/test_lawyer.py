@@ -6,7 +6,6 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def auth_token():
-    # Crie o usuário se necessário antes deste passo
     login_data = {"username": "admin", "password": "admin"}  # altere se necessário
     response = client.post("/auth/login", data=login_data)
     assert response.status_code == 200
