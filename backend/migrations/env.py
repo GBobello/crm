@@ -17,6 +17,8 @@ from app.models import (
     custumer,
     position,
     position_permission,
+    appointment,
+    appointment_status_history
 )
 
 # this is the Alembic Config object, which provides

@@ -11,6 +11,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
     type = Column(String, nullable=False)
     position_id = Column(
         Integer, ForeignKey("positions.id", name="fk_user_position_id")

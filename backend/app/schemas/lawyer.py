@@ -165,6 +165,7 @@ class LawyerResponse(BaseModel):
     document: str
     phone: str
     civil_status: Optional[str] = None
+    is_active: bool
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None

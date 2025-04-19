@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.api import auth, lawyer, customer, position
+from app.api import auth, lawyer, customer, position, appointments
 from app.db.init_db import init_db
 from app.core.config import settings
 
@@ -27,3 +27,4 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(lawyer.router, prefix="/lawyers", tags=["lawyers"])
 app.include_router(customer.router, prefix="/customers", tags=["customers"])
 app.include_router(position.router, prefix="/positions", tags=["positions"])
+app.include_router(appointments.router, prefix="/appointments", tags=["appointments"])

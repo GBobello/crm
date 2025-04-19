@@ -19,6 +19,7 @@ def init_db():
     if not user:
         novo_user = User(
             username="admin",
+            is_superuser=True,
             hashed_password=generate_hashed_password("admin"),
             position_id=position_id,
         )

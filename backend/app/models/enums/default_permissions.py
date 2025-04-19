@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class DefaultPermissions(Enum):
     VIEW_LAWYER = "view_lawyer"
     CREATE_LAWYER = "create_lawyer"
@@ -13,3 +14,7 @@ class DefaultPermissions(Enum):
     CREATE_POSITION = "create_position"
     UPDATE_POSITION = "update_position"
     DELETE_POSITION = "delete_position"
+    VIEW_APPOINTMENT = "view_appointment"
+    CREATE_APPOINTMENT = "create_appointment"
+    UPDATE_APPOINTMENT = "update_appointment"
+    DELETE_APPOINTMENT = "delete_appointment"

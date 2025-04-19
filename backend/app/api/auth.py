@@ -18,6 +18,10 @@ def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.username == username).first()
+
+    if user.is_active is False:
+        raise HTTPException(status_code=401, detail="Usuário inativo")
+
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
