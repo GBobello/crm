@@ -41,6 +41,8 @@ def transition_status(
         )
 
     # Atualiza status atual
+
+    # Revisar esta regta
     if current_status == AppointmentStatus.PENDENTE:
         appointment.started_at = datetime.now()
 
@@ -58,6 +60,7 @@ def transition_status(
         and current_status == AppointmentStatus.PAUSADO
     ):
         appointment.resumed_at = datetime.now()
+    # Revisar esta regta
 
     # Cria histórico
     history = AppointmentStatusHistory(

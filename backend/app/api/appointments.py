@@ -25,6 +25,12 @@ def create_appointment(
     permission=Depends(require_permission(DefaultPermissions.CREATE_APPOINTMENT.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser and permission.id != appointment.user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para criar agendamentos para outros usuários.",
+        )
+
     new_appointment = Appointment(
         title=appointment.title,
         description=appointment.description,
@@ -44,7 +50,12 @@ def get_appointments(
     permission=Depends(require_permission(DefaultPermissions.VIEW_APPOINTMENT.value)),
     db: Session = Depends(get_db),
 ):
-    appointments = db.query(Appointment).all()
+    if permission.is_superuser:
+        appointments = db.query(Appointment).all()
+    else:
+        appointments = (
+            db.query(Appointment).filter(Appointment.user_id == permission.id).all()
+        )
     return appointments
 
 
@@ -59,7 +70,13 @@ def get_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    return appointment
+    if permission.is_superuser or appointment.user_id == permission.id:
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para acessar este agendamento.",
+        )
 
 
 @router.put("/{appointment_id}", response_model=AppointmentResponse)
@@ -74,12 +91,18 @@ def update_appointment(
     )
     if not appointment_to_update:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
-    for field, value in appointment.model_dump(exclude_unset=True).items():
-        setattr(appointment_to_update, field, value)
 
-    db.commit()
-    db.refresh(appointment_to_update)
-    return appointment_to_update
+    if permission.is_superuser or appointment_to_update.user_id == permission.id:
+        for field, value in appointment.model_dump(exclude_unset=True).items():
+            setattr(appointment_to_update, field, value)
+            db.commit()
+            db.refresh(appointment_to_update)
+            return appointment_to_update
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para atualizar este agendamento.",
+        )
 
 
 @router.delete("/{appointment_id}")
@@ -92,20 +115,24 @@ def delete_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    appointment_status_history = (
-        db.query(AppointmentStatusHistory)
-        .filter(AppointmentStatusHistory.appointment_id == appointment_id)
-        .all()
-    )
+    if permission.is_superuser or appointment.user_id == permission.id:
+        appointment_status_history = (
+            db.query(AppointmentStatusHistory)
+            .filter(AppointmentStatusHistory.appointment_id == appointment_id)
+            .all()
+        )
+        for history in appointment_status_history:
+            db.delete(history)
+            db.commit()
 
-    for history in appointment_status_history:
-        db.delete(history)
+        db.delete(appointment)
         db.commit()
-
-    db.delete(appointment)
-    db.commit()
-
-    return {"message": "Agendamento deletado com sucesso"}
+        return {"message": "Agendamento deletado com sucesso"}
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para deletar este agendamento.",
+        )
 
 
 @router.delete("/list/delete")
@@ -120,20 +147,28 @@ def delete_appointments(
     if not appointments:
         raise HTTPException(status_code=404, detail="Agendamentos não encontrados")
 
-    appointment_status_history = (
-        db.query(AppointmentStatusHistory)
-        .filter(AppointmentStatusHistory.appointment_id.in_(appointment_ids))
-        .all()
-    )
-    for history in appointment_status_history:
-        db.delete(history)
-        db.commit()
+    if permission.is_superuser or all(
+        appointment.user_id == permission.id for appointment in appointments
+    ):
+        appointment_status_history = (
+            db.query(AppointmentStatusHistory)
+            .filter(AppointmentStatusHistory.appointment_id.in_(appointment_ids))
+            .all()
+        )
+        for history in appointment_status_history:
+            db.delete(history)
+            db.commit()
 
-    for appointment in appointments:
-        db.delete(appointment)
-        db.commit()
+        for appointment in appointments:
+            db.delete(appointment)
+            db.commit()
 
-    return {"message": "Agendamentos deletados com sucesso"}
+        return {"message": "Agendamentos deletados com sucesso"}
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para deletar estes agendamentos.",
+        )
 
 
 @router.put("/{appointment_id}/start", response_model=AppointmentResponse)
@@ -146,13 +181,17 @@ def start_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    user_id = db.query(User).filter(User.username == permission.username).first().id
-
-    appointment = transition_status(
-        db, appointment, AppointmentStatus.EM_ANDAMENTO, user_id
-    )
-    db.commit()
-    return appointment
+    if permission.is_superuser or appointment_id == permission.id:
+        appointment = transition_status(
+            db, appointment, AppointmentStatus.EM_ANDAMENTO, permission.id
+        )
+        db.commit()
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para iniciar este agendamento.",
+        )
 
 
 @router.put("/{appointment_id}/pause", response_model=AppointmentResponse)
@@ -165,11 +204,17 @@ def pause_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    user_id = db.query(User).filter(User.username == permission.username).first().id
-
-    appointment = transition_status(db, appointment, AppointmentStatus.PAUSADO, user_id)
-    db.commit()
-    return appointment
+    if permission.is_superuser or appointment_id == permission.id:
+        appointment = transition_status(
+            db, appointment, AppointmentStatus.PAUSADO, permission.id
+        )
+        db.commit()
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para pausar este agendamento.",
+        )
 
 
 @router.put("/{appointment_id}/resume", response_model=AppointmentResponse)
@@ -183,12 +228,17 @@ def resume_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    user_id = db.query(User).filter(User.username == permission.username).first().id
-    appointment = transition_status(
-        db, appointment, AppointmentStatus.EM_ANDAMENTO, user_id
-    )
-    db.commit()
-    return appointment
+    if permission.is_superuser or appointment_id == permission.id:
+        appointment = transition_status(
+            db, appointment, AppointmentStatus.EM_ANDAMENTO, permission.id
+        )
+        db.commit()
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para retomar este agendamento.",
+        )
 
 
 @router.put("/{appointment_id}/finish", response_model=AppointmentResponse)
@@ -201,12 +251,17 @@ def finish_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    user_id = db.query(User).filter(User.username == permission.username).first().id
-    appointment = transition_status(
-        db, appointment, AppointmentStatus.CONCLUIDO, user_id
-    )
-    db.commit()
-    return appointment
+    if permission.is_superuser or appointment_id == permission.id:
+        appointment = transition_status(
+            db, appointment, AppointmentStatus.CONCLUIDO, permission.id
+        )
+        db.commit()
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para finalizar este agendamento.",
+        )
 
 
 @router.put("/{appointment_id}/cancel", response_model=AppointmentResponse)
@@ -219,9 +274,14 @@ def cancel_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    user_id = db.query(User).filter(User.username == permission.username).first().id
-    appointment = transition_status(
-        db, appointment, AppointmentStatus.CANCELADO, user_id
-    )
-    db.commit()
-    return appointment
+    if permission.is_superuser or appointment_id == permission.id:
+        appointment = transition_status(
+            db, appointment, AppointmentStatus.CANCELADO, permission.id
+        )
+        db.commit()
+        return appointment
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para cancelar esse agendamento.",
+        )

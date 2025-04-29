@@ -25,6 +25,12 @@ def create_lawyer(
     permission=Depends(require_permission(DefaultPermissions.CREATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para criar advogados.",
+        )
+
     existing = db.query(User).filter(User.username == lawyer.username).first()
     if existing:
         raise HTTPException(
@@ -69,6 +75,9 @@ def update_lawyer(
     permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser and permission.id != lawyer_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
     lawyer_to_update = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer_to_update:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
@@ -92,7 +101,10 @@ def get_lawyers(
     permission=Depends(require_permission(DefaultPermissions.VIEW_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
-    lawyers = db.query(Lawyer).order_by(Lawyer.id).all()
+    if permission.is_superuser:
+        lawyers = db.query(Lawyer).order_by(Lawyer.id).all()
+    else:
+        lawyers = db.query(Lawyer).filter(Lawyer.id == permission.id).all()
     return lawyers
 
 
@@ -102,6 +114,9 @@ def get_lawyer(
     permission=Depends(require_permission(DefaultPermissions.VIEW_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser and permission.id != lawyer_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
@@ -114,6 +129,12 @@ def delete_lawyer(
     permission=Depends(require_permission(DefaultPermissions.DELETE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para deletar advogados.",
+        )
+
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
@@ -133,6 +154,9 @@ def upload_profile_picture(
     permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser and permission.id != lawyer_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
     lawyer = db.query(Lawyer).filter(Lawyer.id == lawyer_id).first()
     if not lawyer:
         raise HTTPException(status_code=404, detail="Advogado não encontrado")
@@ -164,6 +188,12 @@ def activate_lawyer_list(
     permission=Depends(require_permission(DefaultPermissions.UPDATE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para ativar advogados.",
+        )
+
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()
     for lawyer in lawyers:
         lawyer.is_active = True
@@ -177,6 +207,12 @@ def delete_lawyer_list(
     permission=Depends(require_permission(DefaultPermissions.DELETE_LAWYER.value)),
     db: Session = Depends(get_db),
 ):
+    if not permission.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não tem permissão para deletar advogados.",
+        )
+
     lawyers = db.query(Lawyer).filter(Lawyer.id.in_(lawyer_ids)).all()
     for lawyer in lawyers:
         if lawyer.photo_url and os.path.exists(lawyer.photo_url):
