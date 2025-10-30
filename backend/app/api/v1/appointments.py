@@ -14,7 +14,7 @@ from app.schemas.appointment import (
     AppointmentUpdate,
     AppointmentResponse,
 )
-from app.services.appointment_status import transition_status
+from app.infra.services.appointment_status import transition_status
 
 router = APIRouter()
 
@@ -36,6 +36,7 @@ def create_appointment(
         description=appointment.description,
         customer_id=appointment.customer_id,
         user_id=appointment.user_id,
+        # appointment_type=appointment.appointment_type,
     )
 
     db.add(new_appointment)

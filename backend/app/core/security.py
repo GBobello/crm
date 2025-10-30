@@ -8,6 +8,11 @@ from app.models.user import User
 from app.models.position import Position
 from app.db.session import get_db
 from app.core.config import settings
+from app.core.exceptions import (
+    PermissionDeniedException,
+    TokenException,
+    SessionException,
+)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -31,7 +36,7 @@ def require_permission(permission_name: str):
 
         permission_names = {perm.name for perm in position.permissions}
         if permission_name not in permission_names:
-            raise HTTPException(status_code=403, detail="Permissão negada.")
+            raise PermissionDeniedException
 
         return user
 
@@ -46,9 +51,9 @@ def verify_session(request: Request, db: Session = Depends(get_db)):
         )
         username = payload.get("sub")
     except AttributeError:
-        raise HTTPException(status_code=401, detail="Token ausente")
+        raise TokenException("ausente")
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise TokenException("inválido")
 
     sessao = (
         db.query(SessionModel)
@@ -57,9 +62,11 @@ def verify_session(request: Request, db: Session = Depends(get_db)):
     )
 
     if not sessao:
-        raise HTTPException(status_code=401, detail="Sessão inválida")
+        raise SessionException("inválida")
     if sessao.expires_at < datetime.now():
-        raise HTTPException(status_code=401, detail="Sessão expirada")
+        db.delete(sessao)
+        db.commit()
+        raise SessionException("expirada")
     if sessao.ip != request.client.host:
         raise HTTPException(status_code=401, detail="IP inválido")
 
@@ -81,16 +88,16 @@ def create_token(data: dict, expires_delta: timedelta = None):
 def verify_token_cookie(request: Request):
     token = request.cookies.get("session_token")
     if not token:
-        raise HTTPException(status_code=401, detail="Token ausente")
+        raise TokenException("ausente")
     try:
         payload = jwt.decode(
             token, settings.secret_key, algorithms=[settings.algorithm]
         )
         return payload
     except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
+        raise TokenException("expirado")
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise TokenException("inválido")
 
 
 def verify_password(password, hashed_password):
