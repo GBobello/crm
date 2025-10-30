@@ -12,8 +12,8 @@ class BaseRepository(Generic[ModelType]):
     def get_all(self, db: Session) -> List[ModelType]:
         return db.query(self.model).all()
 
-    def get_by_id(self, db: Session, id: int) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id).first()
+    def get_by_id(self, db: Session, entity_id: int) -> Optional[ModelType]:
+        return db.query(self.model).filter(self.model.id == entity_id).first()
 
     def create(self, db: Session, obj_in: ModelType) -> ModelType:
         db.add(obj_in)
@@ -21,8 +21,15 @@ class BaseRepository(Generic[ModelType]):
         db.refresh(obj_in)
         return obj_in
 
-    def delete(self, db: Session, id: int) -> bool:
-        obj = db.query(self.model).filter(self.model.id == id).first()
+    def update(
+        self, db: Session, entity_id: int, obj_in: ModelType
+    ) -> Optional[ModelType]:
+        db.commit()
+        db.refresh(obj_in)
+        return obj_in
+
+    def delete(self, db: Session, entity_id: int) -> bool:
+        obj = db.query(self.model).filter(self.model.id == entity_id).first()
         if not obj:
             return False
         db.delete(obj)

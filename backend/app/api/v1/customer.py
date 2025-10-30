@@ -30,6 +30,11 @@ def update_customer(
     permission=Depends(require_permission(DefaultPermissions.UPDATE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
+    if customer_repository.get_by_document_exclude_id(
+        db, customer.document, customer_id
+    ):
+        raise ConflictException("Cliente com o mesmo documento já existe.")
+
     updated_customer = customer_repository.update_customer(db, customer_id, customer)
     if not updated_customer:
         raise NotFoundException("Cliente")

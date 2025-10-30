@@ -1,5 +1,6 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from app.core.exceptions import ConflictException
 from app.models.custumer import Customer
 from app.infra.repositories.base_repository import BaseRepository
 from app.schemas.customer import CustomerCreate, CustomerUpdate
@@ -11,6 +12,15 @@ class CustomerRepository(BaseRepository[Customer]):
 
     def get_by_document(self, db: Session, document: str) -> Optional[Customer]:
         return db.query(Customer).filter(Customer.document == document).first()
+
+    def get_by_document_exclude_id(
+        self, db: Session, document: str, exclude_id: int
+    ) -> Optional[Customer]:
+        return (
+            db.query(Customer)
+            .filter(Customer.document == document, Customer.id != exclude_id)
+            .first()
+        )
 
     def create_customer(self, db: Session, customer: CustomerCreate) -> Customer:
         db_customer = Customer(
@@ -39,9 +49,7 @@ class CustomerRepository(BaseRepository[Customer]):
         for field, value in update_data.items():
             setattr(db_customer, field, value)
 
-        db.commit()
-        db.refresh(db_customer)
-        return db_customer
+        return self.update(db, customer_id, db_customer)
 
     def delete_multiple(self, db: Session, customer_ids: List[int]) -> bool:
         customers = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
