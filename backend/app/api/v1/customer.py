@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.custumer import Customer
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
 from app.core.security import require_permission
 from app.db.session import get_db
 from app.models.enums.default_permissions import DefaultPermissions
+from app.infra.repositories.customer_repository import CustomerRepository
+from app.core.exceptions import ConflictException, NotFoundException
 
 router = APIRouter()
+customer_repository = CustomerRepository()
 
 
 @router.post("/", response_model=CustomerResponse)
@@ -15,33 +17,10 @@ def create_customer(
     permission=Depends(require_permission(DefaultPermissions.CREATE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    existing = db.query(Customer).filter(Customer.document == customer.document).first()
+    if customer_repository.get_by_document(db, customer.document):
+        raise ConflictException("Cliente com o mesmo documento já existe.")
 
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Cliente com o mesmo documento já existe.",
-        )
-
-    new_customer = Customer(
-        name=customer.name,
-        document=customer.document,
-        email=customer.email,
-        phone=customer.phone,
-        born_date=customer.born_date,
-        civil_status=customer.civil_status,
-        address=customer.address,
-        city=customer.city,
-        state=customer.state,
-        zip_code=customer.zip_code,
-        country=customer.country,
-    )
-
-    db.add(new_customer)
-    db.commit()
-    db.refresh(new_customer)
-
-    return new_customer
+    return customer_repository.create_customer(db, customer)
 
 
 @router.put("/{customer_id}", response_model=CustomerResponse)
@@ -51,17 +30,10 @@ def update_customer(
     permission=Depends(require_permission(DefaultPermissions.UPDATE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    customer_to_update = db.query(Customer).filter(Customer.id == customer_id).first()
-    if not customer_to_update:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-
-    for field, value in customer.model_dump(exclude_unset=True).items():
-        setattr(customer_to_update, field, value)
-
-    db.commit()
-    db.refresh(customer_to_update)
-
-    return customer_to_update
+    updated_customer = customer_repository.update_customer(db, customer_id, customer)
+    if not updated_customer:
+        raise NotFoundException("Cliente")
+    return updated_customer
 
 
 @router.get("/", response_model=list[CustomerResponse])
@@ -69,8 +41,7 @@ def get_customers(
     permission=Depends(require_permission(DefaultPermissions.VIEW_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    customers = db.query(Customer).all()
-    return customers
+    return customer_repository.get_all(db)
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
@@ -79,9 +50,9 @@ def get_customer(
     permission=Depends(require_permission(DefaultPermissions.VIEW_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    customer = customer_repository.get_by_id(db, customer_id)
     if not customer:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        raise NotFoundException("Cliente")
     return customer
 
 
@@ -91,14 +62,8 @@ def delete_customer(
     permission=Depends(require_permission(DefaultPermissions.DELETE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    customer = db.query(Customer).filter(Customer.id == customer_id).first()
-
-    if not customer:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-
-    db.delete(customer)
-    db.commit()
-
+    if not customer_repository.delete(db, customer_id):
+        raise NotFoundException("Cliente")
     return {"message": "Cliente deletado com sucesso."}
 
 
@@ -108,8 +73,5 @@ def delete_customer_list(
     permission=Depends(require_permission(DefaultPermissions.DELETE_CUSTOMER.value)),
     db: Session = Depends(get_db),
 ):
-    customers = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
-    for customer in customers:
-        db.delete(customer)
-        db.commit()
+    customer_repository.delete_multiple(db, customer_ids)
     return {"message": "Clientes deletados com sucesso."}

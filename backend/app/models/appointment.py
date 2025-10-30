@@ -3,6 +3,9 @@ from datetime import datetime
 from app.db.base import Base
 from app.models.enums.appointment_status import AppointmentStatus
 
+# from app.models.enums.appointment_type import AppointmentType
+
+
 class Appointment(Base):
     __tablename__ = "appointments"
 
@@ -11,8 +14,11 @@ class Appointment(Base):
     description = Column(Text, nullable=True)
     start_datetime = Column(DateTime, nullable=True)
     duration_seconds = Column(Integer, nullable=True)
-    status = Column(Enum(AppointmentStatus), default=AppointmentStatus.PENDENTE, nullable=False)
+    status = Column(
+        Enum(AppointmentStatus), default=AppointmentStatus.PENDENTE, nullable=False
+    )
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    # appointment_type = Column(Enum(AppointmentType), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     created_at = Column(DateTime, nullable=False, default=datetime.now())

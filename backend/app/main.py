@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.api import auth, lawyer, customer, position, appointments
+from app.api.v1 import auth, lawyer, customer, position, appointments
 from app.db.init_db import init_db
 from app.core.config import settings
 
